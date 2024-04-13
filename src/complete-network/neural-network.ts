@@ -1,10 +1,5 @@
 import { Layer, NetworkStructor, TraningData, TraningItem } from '../interface';
-import {
-  dFunctionByType,
-  functionByType as activate,
-  gaussianLearnRate,
-  getRandomNumber,
-} from '../utils';
+import { dFunctionByType, functionByType as activate, getRandomNumber } from '../utils';
 
 export class NeuralNetwork {
   // 输入长度
@@ -15,22 +10,30 @@ export class NeuralNetwork {
   private trainingData: TraningData;
   private trainingCount: number;
   // 学习速率系数
-  private learningRate = 0.001;
+  private learningRate = 0;
   // 上一次 loss
   private lastLoss = 0;
+  // 梯度裁剪阈值
+  private maxNorm = Infinity;
 
   constructor({
     trainingData,
     layers,
     trainingCount,
+    learningRate,
+    maxNorm,
   }: {
     trainingData: TraningData;
     layers: Layer[];
     trainingCount: number;
+    learningRate: number;
+    maxNorm: number;
   }) {
     this.trainingData = trainingData;
     this.inputCount = layers[0].inputCount!;
     this.trainingCount = trainingCount;
+    this.learningRate = learningRate;
+    this.maxNorm = maxNorm;
     this.networkStructor = layers.map(({ activation, count }, index) => {
       const previousNeuralCount = index === 0 ? this.inputCount : layers[index - 1].count;
       return {
@@ -109,7 +112,8 @@ export class NeuralNetwork {
     return { lossList, dlossByDxList };
   }
 
-  // 模拟实现
+  // 优化
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private optimization(trainingData: TraningData, trainingIndex: number) {
     // 当前 loss
     let currentLoss = 0;
@@ -149,20 +153,21 @@ export class NeuralNetwork {
 
           // 求 dloss/db = dloss/dx * dx/db
           // 其中 dx/db = 1
-          neural.dlossByDb = neural.dlossByDx;
+          neural.dlossByDb += neural.dlossByDx;
 
           // 求每个 dloss/dwi = dloss/dx * dx/dwi
           // 其中 dx/dwi = 前一个对应神经元的输出 x
           neural.w.forEach((w, wi) => {
-            neural.dlossByDw[wi] =
+            neural.dlossByDw[wi] +=
               neural.dlossByDx * this.getPreviousLayerValues(i - 1, trainingItem)[wi];
           });
         });
       }
     });
 
-    const learningRate =
-      this.learningRate * gaussianLearnRate(trainingIndex, this.trainingCount, 1e-2);
+    // const learningRate =
+    //   this.learningRate *
+    //   gaussianLearnRate(trainingIndex, this.trainingCount, this.learningRate);
 
     // 根据计算结果，更新每层节点的参数
     for (let i = this.networkStructor.length - 1; i >= 0; i--) {
@@ -171,17 +176,36 @@ export class NeuralNetwork {
       layer.neurals.forEach((neural) => {
         // 更新参数 b
         const dbMean = neural.dlossByDb / trainingData.length;
-        neural.b += -dbMean * learningRate;
+        neural.b += this.applyMaxNorm(-dbMean * this.learningRate);
+        neural.dlossByDb = 0;
 
         // 更新参数 w
         neural.w.forEach((w, wi) => {
           const dwMean = neural.dlossByDw[wi] / trainingData.length;
-          neural.w[wi] += -dwMean * learningRate;
+          neural.w[wi] += this.applyMaxNorm(-dwMean * this.learningRate);
+          neural.dlossByDw[wi] = 0;
         });
       });
     }
 
     return currentLoss;
+  }
+
+  // 应用梯度裁剪
+  private applyMaxNorm(dValue: number) {
+    if (dValue >= 0) {
+      if (dValue <= this.maxNorm) {
+        return dValue;
+      } else {
+        return this.maxNorm;
+      }
+    } else {
+      if (dValue >= -this.maxNorm) {
+        return dValue;
+      } else {
+        return -this.maxNorm;
+      }
+    }
   }
 
   public fit(index: number) {
@@ -190,13 +214,21 @@ export class NeuralNetwork {
     if (index === 0) {
       this.lastLoss = loss;
     } else {
-      if (loss < this.lastLoss) {
-        this.learningRate *= 1.1;
-      } else {
-        this.learningRate *= 0.8;
-      }
+      // 500 次之后速率就不要变了
+      if (index < 500) {
+        // 每训练 n 次，调整一次学习速率
+        if (index % 10 === 0) {
+          // loss 不变也要增加学习速率
+          if (loss <= this.lastLoss) {
+            this.learningRate *= 1.1;
+          } else {
+            // loss 变大后要显著降低学习速率
+            this.learningRate *= 0.8;
+          }
 
-      this.lastLoss = loss;
+          this.lastLoss = loss;
+        }
+      }
     }
 
     return {

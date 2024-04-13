@@ -22,3 +22,9 @@ export function init(trainingCount: number) {
       trainingData: commonTrainingData,
     });
 }
+
+// 并发神经网络数
+export const concurrentNetworkCount = 1;
+
+// 训练次数
+export const traingCount = 1000;

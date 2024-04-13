@@ -5,9 +5,14 @@ import functionPlot from 'function-plot';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import { NeuralNetwork } from './complete-network/neural-network';
+import {
+  concurrentNetworkCount,
+  init,
+  traingCount,
+  trainingData,
+} from './complete-network/second';
 import { TrainResult } from './interface';
-import { init, trainingData } from './simple/first';
-import { NeuralNetwork } from './simple/neural-network';
 import { wait } from './utils';
 
 const Main = () => {
@@ -70,12 +75,6 @@ const Main = () => {
   const [lowestLoss, setLowestLoss] = React.useState(Infinity);
 
   const handleRun = React.useCallback(async () => {
-    // 并发神经网络数
-    const concurrentNetworkCount = 1;
-
-    // 训练次数
-    const traingCount = 1000;
-
     // 最低的 loss
     let lowestLoss = Infinity;
 
@@ -90,14 +89,14 @@ const Main = () => {
         const trainResult = neuralNetworks[i].fit(j);
 
         // 如果本次 loss 是全局最低，更新 ui
-        // if (trainResult.loss < lowestLoss) {
-        lowestLoss = trainResult.loss;
-        updateTargetFn(trainResult as any);
-        setParams(trainResult.params);
-        setLowestLoss(lowestLoss);
+        if (trainResult.loss < lowestLoss) {
+          lowestLoss = trainResult.loss;
+          updateTargetFn(trainResult as any);
+          setParams(trainResult.params);
+          setLowestLoss(lowestLoss);
 
-        await wait();
-        // }
+          await wait();
+        }
       }
 
       setIndex(j);

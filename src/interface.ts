@@ -65,7 +65,10 @@ export interface Neural {
   b: number;
   /** 该节点前置节点 w * x 加和的值 */
   weightCount: number;
+  // 对当前训练资料的
   dlossByDx: number;
+  // 对所有训练资料的累计值
   dlossByDb: number;
+  // 对所有训练资料的累计值
   dlossByDw: Array<number>;
 }

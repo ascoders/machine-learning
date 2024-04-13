@@ -62,6 +62,7 @@ export class NeuralNetwork {
     return currentLoss;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public fit(index: number) {
     const loss = this.optimization(this.trainingData);
 
