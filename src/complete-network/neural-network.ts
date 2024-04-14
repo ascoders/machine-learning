@@ -44,10 +44,9 @@ export class NeuralNetwork {
             length: previousNeuralCount,
           }).map(() => getRandomNumber()),
           b: getRandomNumber(),
-          weightCount: 0,
           dlossByDx: 0,
-          dlossByDb: 0,
-          dlossByDw: Array.from({
+          dlossByDbAll: 0,
+          dlossByDwAll: Array.from({
             length: previousNeuralCount,
           }).map(() => 0),
         })),
@@ -73,7 +72,6 @@ export class NeuralNetwork {
             previousValueCountWithWeight += value * neural.w[index];
           },
         );
-        neural.weightCount = previousValueCountWithWeight;
         const activateResult = activate(layer.activation)(
           previousValueCountWithWeight + neural.b,
         );
@@ -153,12 +151,12 @@ export class NeuralNetwork {
 
           // 求 dloss/db = dloss/dx * dx/db
           // 其中 dx/db = 1
-          neural.dlossByDb += neural.dlossByDx;
+          neural.dlossByDbAll += neural.dlossByDx;
 
           // 求每个 dloss/dwi = dloss/dx * dx/dwi
           // 其中 dx/dwi = 前一个对应神经元的输出 x
           neural.w.forEach((w, wi) => {
-            neural.dlossByDw[wi] +=
+            neural.dlossByDwAll[wi] +=
               neural.dlossByDx * this.getPreviousLayerValues(i - 1, trainingItem)[wi];
           });
         });
@@ -175,15 +173,15 @@ export class NeuralNetwork {
 
       layer.neurals.forEach((neural) => {
         // 更新参数 b
-        const dbMean = neural.dlossByDb / trainingData.length;
+        const dbMean = neural.dlossByDbAll / trainingData.length;
         neural.b += this.applyMaxNorm(-dbMean * this.learningRate);
-        neural.dlossByDb = 0;
+        neural.dlossByDbAll = 0;
 
         // 更新参数 w
         neural.w.forEach((w, wi) => {
-          const dwMean = neural.dlossByDw[wi] / trainingData.length;
+          const dwMean = neural.dlossByDwAll[wi] / trainingData.length;
           neural.w[wi] += this.applyMaxNorm(-dwMean * this.learningRate);
-          neural.dlossByDw[wi] = 0;
+          neural.dlossByDwAll[wi] = 0;
         });
       });
     }
@@ -215,7 +213,7 @@ export class NeuralNetwork {
       this.lastLoss = loss;
     } else {
       // 500 次之后速率就不要变了
-      if (index < 500) {
+      if (index < 5000) {
         // 每训练 n 次，调整一次学习速率
         if (index % 10 === 0) {
           // loss 不变也要增加学习速率

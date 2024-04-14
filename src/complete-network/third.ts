@@ -5,17 +5,17 @@ export const trainingData: XYTrainingData = [
   [1, 3],
   [2, 4],
   [3, 5],
-  [4, 7.5],
-  [5, 9],
-  [6, 10],
+  [4, 6.5],
+  [5, 8],
+  [6, 9.5],
   [7, 9],
-  [8, 7],
-  [9, 5],
-  [10, 4],
-  [11, 3],
-  [12, 2],
-  [13, 1],
-  [14, 0],
+  [8, 8],
+  [9, 7],
+  [10, 5.5],
+  [11, 4],
+  [12, 3],
+  [13, 2],
+  [14, 1],
 ];
 
 export function init(trainingCount: number) {
@@ -31,15 +31,15 @@ export function init(trainingCount: number) {
       trainingCount,
       trainingData: commonTrainingData,
       layers: [
-        { count: 1, activation: 'sigmoid', inputCount: 1 },
+        { count: 4, activation: 'sigmoid', inputCount: 1 },
         { count: 4, activation: 'sigmoid' },
-        { count: 1, activation: 'sigmoid' },
+        { count: 1, activation: 'leakyRelu' },
       ],
     });
 }
 
 // 并发神经网络数
-export const concurrentNetworkCount = 1;
+export const concurrentNetworkCount = 1000;
 
 // 训练次数
-export const traingCount = 1000;
+export const traingCount = 100000;

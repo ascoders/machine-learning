@@ -63,12 +63,10 @@ export interface Neural {
   w: Array<number>;
   /** 该节点的常数系数 b */
   b: number;
-  /** 该节点前置节点 w * x 加和的值 */
-  weightCount: number;
-  // 对当前训练资料的
+  // dloss/dx - 仅针对当前训练资料
   dlossByDx: number;
-  // 对所有训练资料的累计值
-  dlossByDb: number;
-  // 对所有训练资料的累计值
-  dlossByDw: Array<number>;
+  // dloss/db - 对所有训练资料累加值
+  dlossByDbAll: number;
+  // dloss/dw - 对所有训练资料累加值
+  dlossByDwAll: Array<number>;
 }
